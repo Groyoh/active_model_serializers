@@ -4,6 +4,10 @@ module ActionController
   module Serialization
     class ImplicitSerializerTest < ActionController::TestCase
       class MyController < ActionController::Base
+        def render_array_without_serializer
+          render json: ["a string"]
+        end
+
         def render_using_implicit_serializer
           @profile = Profile.new({ name: 'Name 1', description: 'Description 1', comments: 'Comments 1' })
           render json: @profile
@@ -140,6 +144,15 @@ module ActionController
       end
 
       tests MyController
+
+      def test_render_array_without_serializer
+        get :render_array_without_serializer
+
+        expected = ["a string"]
+
+        assert_equal 'application/json', @response.content_type
+        assert_equal expected.to_json, @response.body
+      end
 
       # We just have Null for now, this will change
       def test_render_using_implicit_serializer

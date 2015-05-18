@@ -14,6 +14,7 @@ module ActiveModel
             :serializer,
             ActiveModel::Serializer.serializer_for(object)
           )
+          raise "No serializer found for #{object.inspect} in #{objects.inspect}." unless serializer_class
           serializer_class.new(object, options.except(:serializer))
         end
         @meta     = options[:meta]

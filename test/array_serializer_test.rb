@@ -38,6 +38,11 @@ module ActiveModel
         assert_equal @serializer.meta, "the meta"
         assert_equal @serializer.meta_key, "the meta key"
       end
+
+      def test_no_serializer_found
+        err = assert_raises(RuntimeError) { ArraySerializer.new(["a string","another"]) }
+        assert_match /No serializer found for "a string" in \["a string", "another"\]./, err.message
+      end
     end
   end
 end

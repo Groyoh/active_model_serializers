@@ -44,7 +44,11 @@ module ActionController
           @_serializer_opts[:scope_name] = _serialization_scope
 
           # omg hax
-          object = serializer.new(resource, @_serializer_opts)
+          begin
+            object = serializer.new(resource, @_serializer_opts)
+          rescue RuntimeError
+            return super(resource, options)
+          end
           adapter = ActiveModel::Serializer::Adapter.create(object, @_adapter_opts)
           super(adapter, options)
         else
