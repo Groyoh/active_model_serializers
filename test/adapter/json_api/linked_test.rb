@@ -55,35 +55,57 @@ module ActiveModel
               data: [
                 {
                   id: "10",
-                  title: "Hello!!",
-                  body: "Hello, world!!",
                   type: "posts",
-                  links: {
-                    comments: { linkage: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
-                    blog: { linkage: { type: "blogs", id: "999" } },
-                    author: { linkage: { type: "authors", id: "1" } }
+                  attributes: {
+                    title: "Hello!!",
+                    body: "Hello, world!!",
+                  }
+                  relationships: {
+                    comments: {
+                      data: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ]
+                    },
+                    blog: {
+                      data: { type: "blogs", id: "999" }
+                    },
+                    author: {
+                      data: { type: "authors", id: "1" }
+                    }
                   }
                 },
                 {
-                  id: "20",
-                  title: "New Post",
-                  body: "Body",
+                  id: "20"
                   type: "posts",
-                  links: {
-                    comments: { linkage: [] },
-                    blog: { linkage: { type: "blogs", id: "999" } },
-                    author: { linkage: { type: "authors", id: "2" } }
+                  attributes: {
+                    title: "New Post",
+                    body: "Body"
+                  },
+                  relationships: {
+                    comments: {
+                      data: []
+                    },
+                    blog: {
+                      data: { type: "blogs", id: "999" }
+                    },
+                    author: {
+                      data: { type: "authors", id: "2" }
+                    }
                   }
                 }
               ],
               included: [
                 {
                   id: "1",
-                  body: "ZOMG A COMMENT",
                   type: "comments",
-                  links: {
-                    post: { linkage: { type: "posts", id: "10" } },
-                    author: { linkage: nil }
+                  attributes: {
+                    body: "ZOMG A COMMENT",
+                  }
+                  relationships: {
+                    post: {
+                      data: { type: "posts", id: "10" }
+                    },
+                    author: {
+                      data: nil
+                    }
                   }
                 }, {
                   id: "2",
@@ -299,11 +321,17 @@ module ActiveModel
             expected = [
               {
                 id: "2",
-                body: "ZOMG ANOTHER COMMENT",
                 type: "comments",
-                links: {
-                  post: { linkage: { type: "posts", id: "10" } },
-                  author: { linkage: nil }
+                attributes: {
+                  body: "ZOMG ANOTHER COMMENT"
+                },
+                relationships: {
+                  post: {
+                    data: { type: "posts", id: "10" }
+                  },
+                  author: {
+                    data: nil
+                  }
                 }
               }, {
                 id: "1",

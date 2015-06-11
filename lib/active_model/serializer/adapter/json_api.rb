@@ -8,6 +8,7 @@ module ActiveModel
         def initialize(serializer, options = {})
           super
           @options.reverse_merge!(config.default_options)
+          @remove_blank_linkage = !@options.delete(:include_blank_linkage)
 
           serializer.root = true
           @hash = { data: [] }
@@ -40,14 +41,94 @@ module ActiveModel
             end
           else
             @hash = cached_object do
-              @hash[:data] = attributes_for_serializer(serializer, @options)
-              add_resource_links(@hash[:data], serializer)
+              @hash[:data] = {}
+              add_attributes
+              add_relationships
               @hash
             end
           end
         end
 
         private
+        attr_accessor :remove_blank_linkage
+        alias         :remove_blank_linkage?, :remove_blank_linkage
+
+        def add_attributes
+          @hash[:data][:attributes] = attributes_for_serializers(serializer)
+        end
+
+        def attributes_for_serializer(serializer, options)
+          if serializer.respond_to?(:each)
+            serializer.map do |object|
+              result << attributes_for_serializer(object, options)
+            end
+          else
+            add_fields_options(serializer, options)
+            attributes = object.attributes(options)
+            attributes[:id] = attributes[:id].to_s
+            attributes
+          end
+        end
+
+        def resource_object_for(serializer, options)
+          options[:fields] = @fieldset && @fieldset.fields_for(serializer)
+          options[:required_fields] = [:id, :type]
+          attributes = serializer.attributes(options)
+          result = {
+            id: attributes.delete(:id).to_s,
+            type: attributes.delete(:type)
+          }
+
+          result[:attributes] = attributes if attributes.any?
+          result
+        end
+
+        def add_fields_options_for(serializer, options)
+          options[:fields] = @fieldset && @fieldset.fields_for(serializer)
+          options[:required_fields] = [:id, :type]
+        end
+
+        def add_relationships(attrs, serializer, options = {})
+          options[:add_included] = options.fetch(:add_included, true)
+
+          serializer.each_association do |name, association, opts|
+            attrs[:links] ||= {}
+
+            if association.respond_to?(:each)
+              add_links(attrs, name, association)
+            else
+              add_link(attrs, name, association)
+            end
+
+            if options[:add_included]
+              Array(association).each do |association|
+                add_included(name, association)
+              end
+            end
+          end
+        end
+
+        def add_relationship(resource, name, serializer)
+          if serializer.respond_to?(:each)
+            data = serializer.map { |item_serializer| resource_identifier_object(item_serializer) }
+          elsif serializer && serializer.object
+            data = resource_identifier_object(serializer)
+          end
+          resource[:relationships][name] = { data: data }
+        end
+
+        def add_relationship(resource, name, serializer)
+          if serializer.respond_to?(:each)
+            data = serializer.map { |item_serializer| resource_identifier_object(item_serializer) }
+          elsif serializer && serializer.object
+            data = resource_identifier_object(serializer)
+          end
+          resource[:relationships][name] = { data: data } unless data.blank? && remove_blank_relationship?
+        end
+
+        def resource_identifier_object(serializer)
+          { type: serializer.type, id: serializer.id.to_s }
+         end
 
         def remove_duplicates
           return unless prevent_duplicates?
@@ -71,19 +152,6 @@ module ActiveModel
 
         def not_in_data?(ids_per_type, type, id)
           !ids_per_type[type].try(:include?, id)
-        end
-
-        def add_links(resource, name, serializers)
-          resource[:links][name] = { linkage: [] } if @options[:include_blank_linkage]
-          linkage = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
-          resource[:links][name] = { linkage: linkage } unless linkage.empty?
-        end
-
-        def add_link(resource, name, serializer)
-          resource[:links][name] = { linkage: nil } if @options[:include_blank_linkage]
-          if serializer && serializer.object
-            resource[:links][name] = { linkage: { type: serializer.type, id: serializer.id.to_s } }
-          end
         end
 
         def add_included(resource_name, serializers, parent = nil)
@@ -111,27 +179,6 @@ module ActiveModel
           end
         end
 
-
-        def attributes_for_serializer(serializer, options)
-          if serializer.respond_to?(:each)
-            result = []
-            serializer.each do |object|
-              options[:fields] = @fieldset && @fieldset.fields_for(serializer)
-              options[:required_fields] = [:id, :type]
-              attributes = object.attributes(options)
-              attributes[:id] = attributes[:id].to_s
-              result << attributes
-            end
-          else
-            options[:fields] = @fieldset && @fieldset.fields_for(serializer)
-            options[:required_fields] = [:id, :type]
-            result = serializer.attributes(options)
-            result[:id] = result[:id].to_s
-          end
-
-          result
-        end
-
         def include_assoc?(assoc)
           return false unless @options[:include]
           check_assoc("#{assoc}$")
@@ -147,26 +194,6 @@ module ActiveModel
           include_opt = include_opt.split(',') if include_opt.is_a?(String)
           include_opt.any? do |s|
             s.match(/^#{assoc.gsub('.', '\.')}/)
-          end
-        end
-
-        def add_resource_links(attrs, serializer, options = {})
-          options[:add_included] = options.fetch(:add_included, true)
-
-          serializer.each_association do |name, association, opts|
-            attrs[:links] ||= {}
-
-            if association.respond_to?(:each)
-              add_links(attrs, name, association)
-            else
-              add_link(attrs, name, association)
-            end
-
-            if options[:add_included]
-              Array(association).each do |association|
-                add_included(name, association)
-              end
-            end
           end
         end
       end
