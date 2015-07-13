@@ -28,11 +28,6 @@ module ActiveModel
           @hash
         end
 
-        def fragment_cache(cached_hash, non_cached_hash)
-          root = false if @options.include?(:include)
-          JsonApi::FragmentCache.new().fragment_cache(root, cached_hash, non_cached_hash)
-        end
-
         protected
 
         def serializable_hash_with_duplicates
@@ -125,17 +120,15 @@ module ActiveModel
           options[:fields] = @fieldset && @fieldset.fields_for(serializer)
           options[:required_fields] = [:id, :type]
 
-          cache_check(serializer) do
-            attributes = serializer.attributes(options)
+          attributes = serializer.attributes(options)
 
-            result = {
-              id: attributes.delete(:id).to_s,
-              type: attributes.delete(:type)
-            }
+          result = {
+            id: attributes.delete(:id).to_s,
+            type: attributes.delete(:type)
+          }
 
-            result[:attributes] = attributes if attributes.any?
-            result
-          end
+          result[:attributes] = attributes if attributes.any?
+          result
         end
 
         def include_assoc?(assoc)
