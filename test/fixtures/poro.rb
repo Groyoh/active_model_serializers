@@ -229,6 +229,28 @@ Spam::UnrelatedLinkSerializer = Class.new(ActiveModel::Serializer) do
   attributes :id
 end
 
+CommentsArraySerializer = Class.new(ActiveModel::Serializer) do
+  def self_link
+    "http://www.example.com/comments/:id"
+  end    
+end
+
+PostWithLinksSerializer = Class.new(ActiveModel::Serializer) do
+  has_many :comments, serializer: CommentWithLinkSerializer, links: { related: ->(_serializer, association_serializer){ association_serializer.self_link } }
+  belongs_to :author, links: {
+    related: ->(serializer) { serializer.author_related_link },
+    self: ->(serializer) { serializer.author_self_link }
+  }
+
+  def author_related_link
+    "http://www.example.com/authors/#{author.id}"
+  end
+
+  def author_self_link
+    "http://www.example.com/posts/#{id}/relationships/author/"
+  end
+end
+
 module Test
   module Serializer
     Post = Class.new(ActiveModel::Serializer) do
