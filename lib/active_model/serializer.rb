@@ -29,6 +29,7 @@ module ActiveModel
       base._urls = []
       serializer_file = File.open(caller.first[/^[^:]+/])
       base._cache_digest = Digest::MD5.hexdigest(serializer_file.read)
+      super
     end
 
     def self.attributes(*attrs)

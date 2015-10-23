@@ -1,4 +1,5 @@
 require 'active_model/serializer/adapter/json_api/fragment_cache'
+require 'active_model/serializer/adapter/json_api/links'
 
 module ActiveModel
   class Serializer
@@ -175,7 +176,7 @@ module ActiveModel
                 add_relationship(attrs, name, association)
               end
             end
-          
+
             add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
 
             if association.respond_to?(:relationship_links) &&
@@ -191,14 +192,8 @@ module ActiveModel
           end
         end
         
-        def add_relationship_links(attrs, serializer)
-          return unless serializer.respond_to?(:relationship_links)
-          attrs.merge!(links: serializer.relationship_links)
-        end
-
         def add_resource_links(attrs, serializer)
-          return unless serializer.respond_to?(:resource_links)
-          attrs.merge!(links: serializer.resource_links)
+          attrs[:links] = serializer.links
         end
 
         def add_resource_meta(attrs, serializer)
@@ -210,7 +205,6 @@ module ActiveModel
           val = meta.is_a?(Proc) ? meta.call(serializer) : meta
           attrs.merge!(meta: val) if val
         end
-
       end
     end
   end

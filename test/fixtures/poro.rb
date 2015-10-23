@@ -228,8 +228,11 @@ PostPreviewSerializer = Class.new(ActiveModel::Serializer) do
 end
 
 PageSerializer = Class.new(ActiveModel::Serializer) do
-  def resource_links
-    { self: object.href }
+  include ActiveModel::Serializer::Adapter::JsonApi::Links
+  
+  link :related, as: "http://www.exampe.com/page"
+  link :self do |serializer|
+    serializer.object.href
   end
 end
 
