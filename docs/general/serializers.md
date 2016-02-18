@@ -13,28 +13,251 @@ The following methods may be defined in it:
 
 ### Attributes
 
-#### ::attributes
+To define attributes on a serializer, you may use `::attribute` or `::attributes`. For most of the adapter, the
+attribute defined this way will be rendered as a property of the JSON object. When using the `:json_api` adapter, these
+attributes will be in the `attributes` object.
 
-Serialization of the resource `title` and `body`
-
-| In Serializer               | #attributes |
-|---------------------------- |-------------|
-| `attributes :title, :body`  | `{ title: 'Some Title', body: 'Some Body' }`
-| `attributes :title, :body`<br>`def body "Special #{object.body}" end` | `{ title: 'Some Title', body: 'Special Some Body' }`
-
+In the following subsection, we assume that we have a `Post(id: Integer, title: String, published: Boolean)` class and a
+`Post.new(id: 1, title: "AMS is awesome", published: true)` instance.
 
 #### ::attribute
 
-Serialization of the resource `title`
+The `::attribute` method takes the attribute's name as first argument and an optional hash as second argument.
 
-| In Serializer               | #attributes |
-|---------------------------- |-------------|
-| `attribute :title`          | `{ title: 'Some Title' } `
-| `attribute :title, key: :name` | `{ name: 'Some Title' } `
-| `attribute :title { 'A Different Title'}` | `{ title: 'A Different Title' } `
-| `attribute :title`<br>`def title 'A Different Title' end` | `{ title: 'A Different Title' }`
+##### Default behavior
 
-[PR please for conditional attributes:)](https://github.com/rails-api/active_model_serializers/pull/1403)
+By default, the serializer will call `#read_attribute_for_serialization(attribute_name)` on the object to serialize and
+the returned value will be used as the attribute value value.
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title
+  attribute :published
+end
+```
+
+Examples:
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "title": "AMS is awesome",
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "title": "AMS is awesome",
+    "published": true
+  }
+}
+```
+
+##### Using different JSON key
+
+To specify that the attribute should be rendered using a different JSON key, you can use the `key`:
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title, key: :headline
+  attribute :published
+end
+```
+
+Examples:
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "headline": "AMS is awesome",
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "headline": "AMS is awesome",
+    "published": true
+  }
+}
+```
+
+##### Overriding an attribute value
+
+Any attribute value can be overriden by:
+
+* Passing a block to the `attribute` method call.
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title { object.title.upcase }
+  attribute :published
+end
+```
+
+When passing a block, the block will be `instance_eval` in the serializer instance and the block return value
+will be used as the attribute value.
+
+* Defining an instance method with the same name as the attribute's name.
+
+``` ruby
+class EvenPostSerializer < ActiveModel::Serializer
+  attribute :title
+  attribute :published
+
+  def title
+    object.title.upcase
+  end
+end
+```
+
+Examples:
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "title": "AMS IS AWESOME",
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "title": "AMS IS AWESOME",
+    "published": true
+  }
+}
+```
+
+##### Conditional attributes
+
+You can specify that an attribute should be serialized under certain condition using an `if` or `unless` option.
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title, if: :even?
+  attribute :published, unless: 'even?'
+
+  def even?
+    object.id.even?
+  end
+end
+```
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "published": true
+  }
+}
+```
+
+#### ::attributes
+
+##### Default behavior
+
+By default, `::attributes` works the same way as the `::attribute` method except that it takes
+an undefined number of attributes' name as parameters.
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title, :published
+end
+```
+
+Examples:
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "title": "AMS is awesome",
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "title": "AMS is awesome",
+    "published": true
+  }
+}
+```
+
+##### Overriding an attribute value
+
+When using `::attributes`, the only way to override an attribute is to define an instance method
+on the serializer which has the same name as the attribute you want to override.
+
+``` ruby
+class PostSerializer < ActiveModel::Serializer
+  attribute :title, :published
+
+  def title
+    object.title.upcase
+  end
+end
+```
+
+Examples:
+
+* With the `:attributes` adapter:
+
+``` json
+{
+  "title": "AMS IS AWESOME",
+  "published": true
+}
+```
+
+* With the `:json_api` adapter:
+
+``` json
+{
+  "id": "1",
+  "type": "posts",
+  "attributes": {
+    "title": "AMS IS AWESOME",
+    "published": true
+  }
+}
+```
 
 ### Associations
 
