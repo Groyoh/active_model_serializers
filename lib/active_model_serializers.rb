@@ -18,7 +18,7 @@ module ActiveModelSerializers
     ActiveModel::Serializer.config
   end
 
-  require 'active_model/serializer/version'
+  require 'active_model_serializers/version'
   require 'active_model/serializer'
   require 'active_model/serializable_resource'
   require 'active_model_serializers/railtie' if defined?(::Rails)
